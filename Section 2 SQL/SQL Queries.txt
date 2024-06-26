@@ -1,0 +1,117 @@
+CREATE TABLE Country(Code CHAR(3) PRIMARY KEY, Name VARCHAR(25) NOT NULL, Continent ENUM('North America', 'South America', 'Asia', 'Africa', 'Europe', 'Australia', 'Antarctica') NOT NULL, Region VARCHAR(26) NOT NULL, SurfaceArea FLOAT NOT NULL, IndepYear SMALLINT NOT NULL, Population INT NOT NULL, LifeExpectancy FLOAT NOT NULL, GNP FLOAT NOT NULL, GNPOld FLOAT NOT NULL, LocalName VARCHAR(45) NOT NULL, GovernmentForm VARCHAR(45) NOT NULL, HeadOfState VARCHAR(60) NOT NULL, Capital INT NOT NULL, Code2 CHAR(2) NOT NULL);
+
+CREATE TABLE City(ID INT PRIMARY KEY, Name VARCHAR(35) NOT NULL, CountryCode CHAR(3) REFERENCES Country(Code), District VARCHAR(30) NOT NULL, Population INT NOT NULL);
+
+CREATE TABLE CountryLanguage(CountryCode CHAR(3) REFERENCES Country(Code), Language VARCHAR(30) NOT NULL, IsOfficial ENUM('T', 'F') NOT NULL, Percentage FLOAT NOT NULL);
+
+1) List all the countries in Asia.
+SELECT Name FROM Country WHERE Continent = 'Asia';
+
+2) Find the 5 most populous cities in the world.
+SELECT Name, Population FROM City ORDER BY Population DESC LIMIT 5;
+
+3) Find the countries with a population greater than 100 million.
+SELECT Name FROM Country WHERE Population > 100000000;
+
+4) List the languages spoken in the country with the code 'JPN'.
+SELECT Language FROM CountryLanguage WHERE CountryCode = 'JPN';
+
+5) Find the capital city of the country with the largest surface area.
+SELECT City.Name FROM Country JOIN City ON Country.Capital = City.ID ORDER BY Country.SurfaceArea DESC LIMIT 1;
+
+6) List all cities in Japan.
+SELECT Name FROM City WHERE CountryCode = 'JPN';
+
+7) Find the average life expectancy of countries in Europe.
+SELECT AVG(LifeExpectancy) AS AverageLifeExpectancy FROM Country WHERE Continent = 'Europe';
+
+8) Find the number of official languages spoken in each country.
+
+SELECT CountryCode, COUNT(*) AS NumberOfOfficialLanguages FROM CountryLanguage WHERE IsOfficial = 'T' GROUP BY CountryCode;
+
+9) List countries with a life expectancy greater than the world average.
+
+SELECT Name FROM Country WHERE LifeExpectancy > (SELECT AVG(LifeExpectancy) FROM Country);
+
+10) Find the total population of all cities in India.
+
+SELECT SUM(Population) AS TotalPopulation FROM City WHERE CountryCode = (SELECT Code FROM Country WHERE Name = 'India');
+
+11) List the names of all capital cities along with their country's name.
+
+SELECT Country.Name AS CountryName, City.Name AS CapitalCity FROM Country JOIN City ON Country.Capital = City.ID;
+
+12) Find the names of countries where the official language is 'Spanish'.
+
+SELECT Country.Name FROM Country JOIN CountryLanguage ON Country.Code = CountryLanguage.CountryCode WHERE CountryLanguage.Language = 'Spanish' AND CountryLanguage.IsOfficial = 'T';
+
+13) List the top 10 countries by population density (Population/SurfaceArea).
+
+SELECT Name, Population / SurfaceArea AS PopulationDensity FROM Country ORDER BY PopulationDensity DESC LIMIT 10;
+
+14) Find the names and populations of cities in countries with a life expectancy greater than 75 years.
+
+SELECT City.Name, City.Population FROM City JOIN Country ON City.CountryCode = Country.Code WHERE Country.LifeExpectancy > 75;
+
+15) List all countries and their corresponding languages, sorted by country name.
+
+SELECT Country.Name, CountryLanguage.Language FROM Country JOIN CountryLanguage ON Country.Code = CountryLanguage.CountryCode ORDER BY Country.Name;
+
+16) Find the countries that have a city named 'Paris'.
+
+SELECT Country.Name FROM Country JOIN City ON Country.Code = City.CountryCode WHERE City.Name = 'Paris';
+
+17) List the names of the countries that have more than 5 official languages.
+
+SELECT CountryCode FROM CountryLanguage WHERE IsOfficial = 'T' GROUP BY CountryCode HAVING COUNT(Language) > 5;
+
+18) Find the total population of each continent.
+
+SELECT Continent, SUM(Population) AS TotalPopulation FROM Country GROUP BY Continent;
+
+19) List the countries where the capital city's population is more than 10% of the country's total population.
+
+SELECT Country.Name FROM Country JOIN City ON Country.Capital = City.ID WHERE City.Population > 0.1 * Country.Population;
+
+20) Find the average life expectancy for each continent.
+
+SELECT Continent, AVG(LifeExpectancy) AS AverageLifeExpectancy FROM Country GROUP BY Continent;
+
+21) List the cities that are capitals of countries in South America.
+
+SELECT City.Name FROM City JOIN Country ON City.ID = Country.Capital WHERE Country.Continent = 'South America';
+
+22) Find the countries that do not have any cities with a population over 1 million.
+
+SELECT Name FROM Country WHERE Code NOT IN (SELECT DISTINCT CountryCode FROM City WHERE Population > 1000000);
+
+23) List the countries where the sum of the populations of all cities is more than the country's population.
+
+SELECT Country.Name FROM Country JOIN (SELECT CountryCode, SUM(Population) AS CityPopulationSum FROM City GROUP BY CountryCode) AS city_sum ON Country.Code = city_sum.CountryCode WHERE city_sum.CityPopulationSum > Country.Population;
+
+24) Find the country with the highest number of cities.
+
+SELECT CountryCode, COUNT(*) AS NumberOfCities FROM City GROUP BY CountryCode ORDER BY NumberOfCities DESC LIMIT 1;
+
+25) List the countries where the official language is not English but is spoken by more than 50% of the population.
+
+SELECT Country.Name FROM Country JOIN CountryLanguage ON Country.Code = CountryLanguage.CountryCode WHERE CountryLanguage.Language != 'English' AND CountryLanguage.IsOfficial = 'T' AND CountryLanguage.Percentage > 50;
+
+26) Classify countries into population size categories: 'Small' (population < 1 million), 'Medium' (1 million <= population < 10 million), and 'Large' (population >= 10 million).
+
+SELECT Name, CASE WHEN Population < 1000000 THEN 'Small' WHEN Population >= 1000000 AND Population < 10000000 THEN 'Medium' ELSE 'Large' END AS PopulationSizeCategory FROM Country;
+
+27) Determine the continent's GDP category: 'Low' (GNP < 100 billion), 'Medium' (100 billion <= GNP < 1 trillion), and 'High' (GNP >= 1 trillion).
+
+SELECT Continent, CASE WHEN SUM(GNP) < 100000 THEN 'Low' WHEN SUM(GNP) >= 100000 AND SUM(GNP) < 1000000 THEN 'Medium' ELSE 'High' END AS GDPCategory FROM Country GROUP BY Continent;
+
+28) Label cities as 'Small' (population < 100,000), 'Medium' (100,000 <= population < 1 million), or 'Large' (population >= 1 million).
+
+SELECT Name, CASE WHEN Population < 100000 THEN 'Small' WHEN Population >= 100000 AND Population < 1000000 THEN 'Medium' ELSE 'Large' END AS PopulationCategory FROM City;
+
+29) Classify countries based on life expectancy: 'Low' (life expectancy < 50), 'Average' (50 <= life expectancy < 75), and 'High' (life expectancy >= 75).
+
+SELECT Name, CASE WHEN LifeExpectancy < 50 THEN 'Low' WHEN LifeExpectancy >= 50 AND LifeExpectancy < 75 THEN 'Average' ELSE 'High' END AS LifeExpectancyCategory FROM Country;
+
+
+
